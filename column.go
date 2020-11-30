@@ -25,6 +25,15 @@ func (col *ColumnData) SetDefault(value interface{}) *ColumnData {
 	return col
 }
 
+// Column Used when creating a new ColumnData.
+func Column(name string, dataType DataType) *ColumnData {
+	data := ColumnData{
+		Name:     name,
+		DataType: dataType,
+	}
+	return &data
+}
+
 // Build is Converts column data to SQL syntax.
 func (col ColumnData) Build() (string, error) {
 	if database == nil {
@@ -34,7 +43,7 @@ func (col ColumnData) Build() (string, error) {
 	switch col.DataType.TypeName {
 	case "ENUM":
 		if defa := col.Property; defa != nil {
-			if res, ok := defa.([]string); ok {
+			if res, ok := defa.([]interface{}); ok {
 				result += fmt.Sprintf(" %v", fmt.Sprintf("ENUM(%v)", toSQLList(res)))
 			}
 		} else {
@@ -42,7 +51,7 @@ func (col ColumnData) Build() (string, error) {
 		}
 	case "SET":
 		if prop := col.Property; prop != nil {
-			if res, ok := prop.([]string); ok {
+			if res, ok := prop.([]interface{}); ok {
 				result += fmt.Sprintf(" %v", fmt.Sprintf("SET(%v)", toSQLList(res)))
 			}
 		} else {
@@ -56,7 +65,15 @@ func (col ColumnData) Build() (string, error) {
 				result += fmt.Sprintf(" %v(`%v`)", col.DataType.TypeName, res)
 			}
 		} else {
-			result += col.DataType.TypeName
+			if prope := col.DataType.DefaultPropaty; prope != nil {
+				if res, ok := prope.(int); ok {
+					result += fmt.Sprintf(" %v(%v)", col.DataType.TypeName, res)
+				} else if res, ok := prope.(string); ok {
+					result += fmt.Sprintf(" %v(`%v`)", col.DataType.TypeName, res)
+				}
+			} else {
+				result += col.DataType.TypeName
+			}
 		}
 	}
 
@@ -73,6 +90,10 @@ func (col ColumnData) Build() (string, error) {
 	}
 	if col.NotNull {
 		result += " NOT"
+	} else {
+		if col.PrimaryKey {
+			result += " NOT"
+		}
 	}
 	result += " NULL"
 	if col.AutoIncremental {
@@ -80,64 +101,66 @@ func (col ColumnData) Build() (string, error) {
 			result += " AUTO_INCREMENT"
 		}
 	}
-	if !col.DataType.AutoIncrement {
-		if defa := col.Default; defa != nil {
-			switch dataType {
-			case "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT", "FLOAT", "DOUBLE":
-				if col.Unsigned {
-					if res, ok := defa.(uint64); ok {
-						result += fmt.Sprintf(" %v", res)
+	if !col.AutoIncremental {
+		if col.DataType.Default {
+			if defa := col.Default; defa != nil {
+				switch dataType {
+				case "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT", "FLOAT", "DOUBLE":
+					if col.Unsigned {
+						if res, ok := defa.(uint64); ok {
+							result += fmt.Sprintf(" DEFAULT %v", res)
+						} else {
+							return "", &Error{Msg: "The default value could not be successfully converted to a number."}
+						}
 					} else {
-						return "", &Error{Msg: "The default value could not be successfully converted to a number."}
+						if res, ok := defa.(int64); ok {
+							result += fmt.Sprintf(" DEFAULT %v", res)
+						} else {
+							return "", &Error{Msg: "The default value could not be successfully converted to a number."}
+						}
 					}
-				} else {
-					if res, ok := defa.(int64); ok {
-						result += fmt.Sprintf(" %v", res)
+				case "BOOL", "BOOLEAN":
+					if res, ok := defa.(bool); ok {
+						result += fmt.Sprintf(" DEFAULT %v", res)
 					} else {
-						return "", &Error{Msg: "The default value could not be successfully converted to a number."}
+						return "", &Error{Msg: "The default value could not be successfully converted to Boolean."}
 					}
-				}
-			case "BOOL", "BOOLEAN":
-				if res, ok := defa.(bool); ok {
-					result += fmt.Sprintf(" %v", res)
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to Boolean."}
-				}
-			case "DATE":
-				if res, ok := defa.(time.Time); ok {
-					result += fmt.Sprintf(" `%v`", toSQLDate(res))
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
-				}
-			case "DATETIME":
-				if res, ok := defa.(time.Time); ok {
-					result += fmt.Sprintf(" `%v`", toSQLDateTime(res))
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
-				}
-			case "TIMESTAMP":
-				if res, ok := defa.(time.Time); ok {
-					result += fmt.Sprintf(" `%v`", toSQLDateTime(res))
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
-				}
-			case "TIME":
-				if res, ok := defa.(time.Time); ok {
-					result += fmt.Sprintf(" `%v`", toSQLTime(res))
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
-				}
-			case "TEXT", "VARCHAR", "MIDIUMTEXT", "LONGTEXT", "ENUM":
-				if res, ok := defa.(string); ok {
-					result += fmt.Sprintf(" `%v`", res)
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to String."}
-				}
-			case "SET":
-				if res, ok := defa.([]string); ok {
-					result += fmt.Sprintf(" %v", toSQLList(res))
-				} else {
-					return "", &Error{Msg: "The default value could not be successfully converted to List."}
+				case "DATE":
+					if res, ok := defa.(time.Time); ok {
+						result += fmt.Sprintf(" DEFAULT '%v'", toSQLDate(res))
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
+					}
+				case "DATETIME":
+					if res, ok := defa.(time.Time); ok {
+						result += fmt.Sprintf(" DEFAULT '%v'", toSQLDateTime(res))
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
+					}
+				case "TIMESTAMP":
+					if res, ok := defa.(time.Time); ok {
+						result += fmt.Sprintf(" DEFAULT '%v'", toSQLDateTime(res))
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
+					}
+				case "TIME":
+					if res, ok := defa.(time.Time); ok {
+						result += fmt.Sprintf(" DEFAULT '%v'", toSQLTime(res))
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to time.Time."}
+					}
+				case "TEXT", "VARCHAR", "MEDIUMTEXT", "LONGTEXT", "ENUM":
+					if res, ok := defa.(string); ok {
+						result += fmt.Sprintf(" DEFAULT '%v'", res)
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to String."}
+					}
+				case "SET":
+					if res, ok := defa.([]interface{}); ok {
+						result += fmt.Sprintf(" DEFAULT %v", toSQLList(res))
+					} else {
+						return "", &Error{Msg: "The default value could not be successfully converted to List."}
+					}
 				}
 			}
 		}

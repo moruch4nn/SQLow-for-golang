@@ -64,10 +64,15 @@ func toSQLTime(val time.Time) string {
 	return fmt.Sprintf("%v:%v:%v", val.Hour(), val.Minute(), val.Second())
 }
 
-func toSQLList(val []string) string {
+func toSQLList(val []interface{}) string {
 	tmp := []string{}
-	for _, value := range val {
-		tmp = append(tmp, fmt.Sprintf("`%v`", string(value)))
+	for n, value := range val {
+		switch value.(type) {
+		case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
+			tmp[n] = fmt.Sprintf("%v", value)
+		default:
+			tmp[n] = fmt.Sprintf("`%v`", value)
+		}
 	}
 	return strings.Join(tmp, ",")
 }
