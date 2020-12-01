@@ -66,13 +66,56 @@ func toSQLTime(val time.Time) string {
 
 func toSQLList(val []interface{}) string {
 	tmp := []string{}
-	for n, value := range val {
+	for _, value := range val {
 		switch value.(type) {
 		case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
-			tmp[n] = fmt.Sprintf("%v", value)
+			tmp = append(tmp, fmt.Sprintf("%v", value))
 		default:
-			tmp[n] = fmt.Sprintf("`%v`", value)
+			tmp = append(tmp, fmt.Sprintf("`%v`", value))
 		}
 	}
 	return strings.Join(tmp, ",")
+}
+
+func toSQLListS(val []interface{}) string {
+	tmp := []string{}
+	for _, value := range val {
+		switch value.(type) {
+		case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
+			tmp = append(tmp, fmt.Sprintf("%d", value))
+		default:
+			tmp = append(tmp, fmt.Sprintf("'%s'", value))
+		}
+	}
+	return strings.Join(tmp, ",")
+}
+
+//ToSQLType is converts the type you entered to SQL.
+func ToSQLType(val interface{}) string {
+	switch val.(type) {
+	case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return fmt.Sprintf("%d", val)
+	case time.Time:
+		if val, ok := val.(time.Time); ok {
+			return val.Format("2006/1/2 15:04:05")
+		}
+	default:
+		return fmt.Sprintf("`%d`", val)
+	}
+	return ""
+}
+
+//ToSQLTypeS is converts the type you entered to SQL.
+func ToSQLTypeS(val interface{}) string {
+	switch val.(type) {
+	case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return fmt.Sprintf("%d", val)
+	case time.Time:
+		if val, ok := val.(time.Time); ok {
+			return val.Format("2006/1/2 15:04:05")
+		}
+	default:
+		return fmt.Sprintf("'%s'", val)
+	}
+	return ""
 }

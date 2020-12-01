@@ -28,6 +28,11 @@ func (tab TableData) Build() (string, error) {
 	result := fmt.Sprintf("CREATE TABLE `%v`.`%v` (", database.DBName, name)
 	columnCounts := len(columns) - 1
 	for n, i := range columns {
+		for _, x := range columns {
+			if i.Name == x.Name {
+				return "", &Error{Msg: "The column name is duplicated."}
+			}
+		}
 		if i.AutoIncremental {
 			if autoIncrement {
 				return "", &Error{Msg: "Up to one AutoIncrement can be set for each table."}

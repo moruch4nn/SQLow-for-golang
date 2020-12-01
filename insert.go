@@ -24,6 +24,67 @@ func (ins InsertData) Build() (string, error) {
 		values = append(values, ins.Values[k])
 	}
 	result += toSQLList(keys) + ") VALUES ("
-	result += toSQLList(values) + ")"
+	result += toSQLListS(values) + ")"
 	return result, nil
+}
+
+// Send synchronizes InsertData to the database.
+func (ins InsertData) Send() (Status, error) {
+	res, err := ins.Build()
+	if err != nil {
+		return ERROR, err
+	}
+	_, err = database.Database.Exec(res)
+	if err != nil {
+		return ERROR, err
+	}
+	return ADD, nil
+}
+
+// SendPK will pass if the specified key exists and INSERT if it does not exist.
+func (ins InsertData) SendPK(pk string) (Status, error) {
+	if value := ins.Values[pk]; value != nil {
+		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, pk, ToSQLTypeS(value))); err == nil {
+			if res.Next() {
+				return PASS, nil
+			}
+		} else {
+			return ERROR, err
+		}
+	} else {
+		return "", &Error{Msg: "PK is nil"}
+	}
+	res, err := ins.Build()
+	if err != nil {
+		return ERROR, err
+	}
+	_, err = database.Database.Exec(res)
+	if err != nil {
+		return ERROR, err
+	}
+	return ADD, nil
+}
+
+// ForceSend will UPDATE if the specified key exists and INSERT if it does not.
+func (ins InsertData) ForceSend(pk string) (Status, error) {
+	if value := ins.Values[pk]; value != nil {
+		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, pk, ToSQLTypeS(value))); err == nil {
+			if res.Next() {
+				return PASS, nil
+			}
+		} else {
+			return ERROR, err
+		}
+	} else {
+		return "", &Error{Msg: "PK is nil"}
+	}
+	res, err := ins.Build()
+	if err != nil {
+		return ERROR, err
+	}
+	_, err = database.Database.Exec(res)
+	if err != nil {
+		return ERROR, err
+	}
+	return ADD, nil
 }
