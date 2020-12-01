@@ -97,7 +97,7 @@ func ToSQLType(val interface{}) string {
 		return fmt.Sprintf("%d", val)
 	case time.Time:
 		if val, ok := val.(time.Time); ok {
-			return val.Format("2006/1/2 15:04:05")
+			return fmt.Sprintf("`%s`", val.Format("2006/1/2 15:04:05"))
 		}
 	default:
 		return fmt.Sprintf("`%d`", val)
@@ -112,7 +112,7 @@ func ToSQLTypeS(val interface{}) string {
 		return fmt.Sprintf("%d", val)
 	case time.Time:
 		if val, ok := val.(time.Time); ok {
-			return val.Format("2006/1/2 15:04:05")
+			return fmt.Sprintf("'%s'", val.Format("2006/1/2 15:04:05"))
 		}
 	default:
 		return fmt.Sprintf("'%s'", val)

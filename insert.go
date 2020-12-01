@@ -42,9 +42,9 @@ func (ins InsertData) Send() (Status, error) {
 }
 
 // SendPK will pass if the specified key exists and INSERT if it does not exist.
-func (ins InsertData) SendPK(pk string) (Status, error) {
-	if value := ins.Values[pk]; value != nil {
-		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, pk, ToSQLTypeS(value))); err == nil {
+func (ins InsertData) SendPK(key string) (Status, error) {
+	if value := ins.Values[key]; value != nil {
+		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, key, ToSQLTypeS(value))); err == nil {
 			if res.Next() {
 				return PASS, nil
 			}
@@ -52,7 +52,7 @@ func (ins InsertData) SendPK(pk string) (Status, error) {
 			return ERROR, err
 		}
 	} else {
-		return "", &Error{Msg: "PK is nil"}
+		return "", &Error{Msg: "Key is nil"}
 	}
 	res, err := ins.Build()
 	if err != nil {
@@ -66,11 +66,15 @@ func (ins InsertData) SendPK(pk string) (Status, error) {
 }
 
 // ForceSend will UPDATE if the specified key exists and INSERT if it does not.
-func (ins InsertData) ForceSend(pk string) (Status, error) {
-	if value := ins.Values[pk]; value != nil {
-		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, pk, ToSQLTypeS(value))); err == nil {
+func (ins InsertData) ForceSend(key string) (Status, error) {
+	if value := ins.Values[key]; value != nil {
+		if res, err := database.Database.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s LIMIT 1;", ins.TableName, key, ToSQLTypeS(value))); err == nil {
 			if res.Next() {
-				return PASS, nil
+				_, err := database.Database.Exec(ins.Update(key, ins.Values[key]))
+				if err != nil {
+					return ERROR, err
+				}
+				return UPDATE, err
 			}
 		} else {
 			return ERROR, err
