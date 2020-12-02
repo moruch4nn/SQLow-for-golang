@@ -74,7 +74,7 @@ func toSQLList(val []interface{}) string {
 			tmp = append(tmp, fmt.Sprintf("`%v`", value))
 		}
 	}
-	return strings.Join(tmp, ",")
+	return toEscape(strings.Join(tmp, ","))
 }
 
 func toSQLListS(val []interface{}) string {
@@ -87,35 +87,50 @@ func toSQLListS(val []interface{}) string {
 			tmp = append(tmp, fmt.Sprintf("'%s'", value))
 		}
 	}
-	return strings.Join(tmp, ",")
+	return toEscape(strings.Join(tmp, ","))
 }
 
-//ToSQLType is converts the type you entered to SQL.
-func ToSQLType(val interface{}) string {
+//toSQLType is converts the type you entered to SQL.
+func toSQLType(val interface{}) string {
 	switch val.(type) {
 	case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return fmt.Sprintf("%d", val)
+		return toEscape(fmt.Sprintf("%d", val))
 	case time.Time:
 		if val, ok := val.(time.Time); ok {
-			return fmt.Sprintf("`%s`", val.Format("2006/1/2 15:04:05"))
+			return toEscape(fmt.Sprintf("`%s`", val.Format("2006/1/2 15:04:05")))
 		}
 	default:
-		return fmt.Sprintf("`%d`", val)
+		return toEscape(fmt.Sprintf("`%d`", val))
 	}
 	return ""
 }
 
-//ToSQLTypeS is converts the type you entered to SQL.
-func ToSQLTypeS(val interface{}) string {
+//toSQLTypeS is converts the type you entered to SQL.
+func toSQLTypeS(val interface{}) string {
 	switch val.(type) {
 	case int, int16, int32, int64, int8, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return fmt.Sprintf("%d", val)
+		return toEscape(fmt.Sprintf("%d", val))
 	case time.Time:
 		if val, ok := val.(time.Time); ok {
-			return fmt.Sprintf("'%s'", val.Format("2006/1/2 15:04:05"))
+			return toEscape(fmt.Sprintf("'%s'", val.Format("2006/1/2 15:04:05")))
 		}
 	default:
-		return fmt.Sprintf("'%s'", val)
+		return toEscape(fmt.Sprintf("'%s'", val))
 	}
 	return ""
+}
+
+func toEscape(val string) string {
+	val = strings.Replace(val, "'", "\\'", -1)
+	val = strings.Replace(val, "\"", "\\\"", -1)
+	val = strings.Replace(val, "\\", "\\\\", -1)
+	val = strings.Replace(val, "\b", "\\b", -1)
+	val = strings.Replace(val, "\n", "\\n", -1)
+	val = strings.Replace(val, "\r", "\\r", -1)
+	val = strings.Replace(val, "\t", "\\t", -1)
+	val = strings.Replace(val, "%", "\\%", -1)
+	val = strings.Replace(val, "_", "\\_", -1)
+	val = strings.Replace(val, "\\0", "\\\\0", -1)
+	val = strings.Replace(val, "\\Z", "\\\\Z", -1)
+	return val
 }
