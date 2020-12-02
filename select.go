@@ -1,6 +1,7 @@
 package sqlow
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -30,6 +31,19 @@ func Select(tableName string, values []string) *SelectData {
 		Like:      map[string]string{},
 	}
 	return &data
+}
+
+// Send gets the contents of SelectData and returns it in sql.Rows.
+func (sel *SelectData) Send() (*sql.Rows, error) {
+	code, err := sel.Build()
+	if err != nil {
+		return nil, err
+	}
+	query, err := database.Database.Query(code)
+	if err != nil {
+		return nil, err
+	}
+	return query, nil
 }
 
 // Build converts SelectData to SELECT syntax.

@@ -15,4 +15,10 @@ var (
 
 	// ERROR is will be in this status if the execution fails for some reason.
 	ERROR Status = "ERROR"
+
+	// DELETE is if deleted, the status will be this.
+	DELETE Status = "DELETE"
+
+	// SELECT is if selected, the status will be this.
+	SELECT Status = "SELECT"
 )
