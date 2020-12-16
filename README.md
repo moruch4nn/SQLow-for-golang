@@ -1,3 +1,3 @@
 # SQLow for golang
-# It is currently incomplete and will not work perfectly.<br>
-Sqlow makes SQL operations in Golang easy and syntactically error-free.
+# 現在は不完全であり、完全には機能しません。<br>
+Sqlowを使用すると、GolangでのSQL操作が簡単になり、構文的にエラーが発生しなくなります。
